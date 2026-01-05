@@ -1,17 +1,25 @@
-FROM gradle:8.7-jdk17 AS build
+# Build stage
+FROM gradle:8.6.0-jdk21 AS build
 
+# Set working directory
 WORKDIR /app
 
-COPY build.gradle settings.gradle ./
+# Copy build configuration files
+COPY build.gradle settings.gradle* ./
 
+# Download and cache dependencies
+RUN gradle --no-daemon dependencies
+
+# Copy source code
 COPY src ./src
 
-COPY src/main/resources/db/migration ./src/main/resources/db/migration
+# Build the application
+RUN gradle --no-daemon bootJar
 
-RUN gradle bootjar
+# Runtime stage
+FROM eclipse-temurin:21-jre-jammy
 
-FROM eclipse-temurin:21-jre-alpine
-
+# Set working directory
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*.jar app.jar
